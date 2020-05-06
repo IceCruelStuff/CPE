@@ -12,8 +12,6 @@ use core\level\block\MonsterSpawner;
 use core\level\tile\MobSpawner;
 use core\Cryptic;
 use pocketmine\block\BlockFactory;
-use pocketmine\block\GlowingRedstoneOre;
-use pocketmine\block\RedstoneOre;
 use pocketmine\item\Item;
 use pocketmine\tile\Tile;
 use ReflectionException;
