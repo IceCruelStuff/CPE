@@ -466,31 +466,6 @@ class ItemListener implements Listener{
 				if($action->getSourceItem()->hasEnchantments() or $action->getTargetItem()->hasEnchantments()){
 					if($inventory instanceof ArmorInventory){
 						$holder = $inventory->getHolder();
-						if($holder instanceof CrypticPlayer){
-							$this->core->getScheduler()->scheduleDelayedTask(new class($holder) extends Task{
-
-								/** @var CrypticPlayer */
-								private $player;
-
-								/**
-								 *  constructor.
-								 *
-								 * @param CrypticPlayer $player
-								 */
-								public function __construct(CrypticPlayer $player){
-									$this->player = $player;
-								}
-
-								/**
-								 * @param int $currentTick
-								 */
-								public function onRun(int $currentTick){
-									if($this->player->isOnline()){
-										$this->player->setActiveArmorEnchantments();
-									}
-								}
-							}, 1);
-						}
 						return;
 					}
 				}
