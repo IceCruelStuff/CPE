@@ -37,22 +37,16 @@ class EntityManager {
     const STACK_SIZE = "{SIZE}";
 
     const STACK_NAME = "{NAME}";
-
     /** @var Cryptic */
     private $core;
-
     /** @var ExplosionQueueTask */
     private $explosionQueue;
-
     /** @var NPC[] */
     private $npcs = [];
-
     /** @var string */
     private static $nametag;
-
     /**
      * EntityManager constructor.
-     *
      * @param Cryptic $core
      */
     public function __construct(Cryptic $core) {
