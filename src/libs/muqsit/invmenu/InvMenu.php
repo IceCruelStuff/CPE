@@ -17,61 +17,58 @@
  *
 */
 
-namespace core\libs\muqsit\invmenu;
+declare(strict_types=1);
 
-use core\libs\muqsit\invmenu\inventories\BaseFakeInventory;
+namespace muqsit\invmenu;
 
+use Closure;
+use muqsit\invmenu\inventory\InvMenuInventory;
+use muqsit\invmenu\metadata\MenuMetadata;
+use muqsit\invmenu\session\PlayerManager;
+use muqsit\invmenu\session\PlayerSession;
+use pocketmine\inventory\transaction\action\SlotChangeAction;
+use pocketmine\item\Item;
 use pocketmine\Player;
 
-class InvMenu implements MenuIds{
+abstract class InvMenu implements MenuIds{
 
-	public static function create(string $inventory_class, ...$args) : InvMenu{
-		return new InvMenu($inventory_class, ...$args);
+	public static function create(string $identifier) : SharedInvMenu{
+		return new SharedInvMenu(InvMenuHandler::getMenuType($identifier));
 	}
 
+	public static function createSessionized(string $identifier) : SessionizedInvMenu{
+		return new SessionizedInvMenu(InvMenuHandler::getMenuType($identifier));
+	}
+
+	/** @var MenuMetadata */
+	protected $type;
+
 	/** @var bool */
-	private $readonly = false;
+	protected $readonly = false;
 
 	/** @var string|null */
-	private $name;
+	protected $name;
 
 	/** @var callable|null */
-	private $listener;
+	protected $listener;
 
 	/** @var callable|null */
-	private $inventory_close_listener;
+	protected $inventory_close_listener;
 
-	/** @var bool */
-	private $sessionized = false;
-
-	/** @var BaseFakeInventory[]|null */
-	private $sessions;
-
-	/** @var BaseFakeInventory|null */
-	private $inventory;
-
-	public function __construct(string $inventory_class, ...$args){
-		if(!is_subclass_of($inventory_class, BaseFakeInventory::class, true)){
-			throw new \InvalidArgumentException($inventory_class . " must extend " . BaseFakeInventory::class . ".");
-		}
-
-		$this->inventory = new $inventory_class($this, ...$args);
+	public function __construct(MenuMetadata $type){
+		$this->type = $type;
 	}
 
-	public function getInventory(?Player $player = null, ?string $custom_name = null) : BaseFakeInventory{
-		if($this->sessionized){
-			if($player === null){
-				throw new \InvalidArgumentException("You need to specify a " . Player::class . " instance as the first parameter of getInventory() while fetching an inventory from a sessionized InvMenu instance.");
-			}
-
-			return $this->sessions[$uuid = $player->getId()] ?? ($this->sessions[$uuid] = $this->inventory->createNewInstance($this));
-		}
-
-		return $this->inventory;
+	public function getType() : MenuMetadata{
+		return $this->type;
 	}
 
-	public function readonly(bool $value = true) : InvMenu{
-		$this->readonly = $value;
+	public function getName() : ?string{
+		return $this->name;
+	}
+
+	public function setName(?string $name) : self{
+		$this->name = $name;
 		return $this;
 	}
 
@@ -79,67 +76,74 @@ class InvMenu implements MenuIds{
 		return $this->readonly;
 	}
 
-	public function setName(?string $name) : InvMenu{
-		$this->name = $name;
+	public function readonly(bool $value = true) : self{
+		$this->readonly = $value;
 		return $this;
 	}
 
-	public function sessionize(bool $value = true) : InvMenu{
-		if($this->sessionized !== $value){
-			$this->clearSessions();
-			$this->sessionized = $value;
-		}
-
-		return $this;
-	}
-
-	public function getListener() : ?callable{
-		return $this->listener;
-	}
-
-	public function setListener(?callable $listener) : InvMenu{
+	public function setListener(?callable $listener) : self{
 		$this->listener = $listener;
 		return $this;
 	}
 
-	public function getInventoryCloseListener() : ?callable{
-		return $this->inventory_close_listener;
-	}
-
-	public function setInventoryCloseListener(?callable $inventory_close_listener) : InvMenu{
-		$this->inventory_close_listener = $inventory_close_listener;
+	public function setInventoryCloseListener(?callable $listener) : self{
+		$this->inventory_close_listener = $listener;
 		return $this;
 	}
 
-	public function send(Player $player, ?string $custom_name = null) : bool{
-		return $this->getInventory($player)->send($player, $custom_name ?? $this->name);
+	public function copyProperties(InvMenu $menu) : void{
+		$this->setName($menu->getName())
+			->readonly($menu->isReadonly())
+			->setListener($menu->listener)
+			->setInventoryCloseListener($menu->inventory_close_listener);
 	}
 
-	public function clearSessions(bool $remove_windows = true) : void{
-		if($this->sessionized){
-			$inventories = $this->sessions;
-			$this->sessions = [];
-		}else{
-			$inventories = [$this->getInventory()];
-		}
-
-		if($remove_windows){
-			foreach($inventories as $inventory){
-				foreach($inventory->getViewers() as $player){
-					$player->removeWindow($inventory);
-				}
+	final public function send(Player $player, ?string $name = null, ?Closure $callback = null) : void{
+		/** @var PlayerSession $session */
+		$session = PlayerManager::get($player);
+		if($session === null){
+			if($callback !== null){
+				$callback(false);
 			}
+		}else{
+			$network = $session->getNetwork();
+			$network->dropPending();
+			$session->removeWindow();
+			$network->wait(function(bool $success) use($player, $session, $name, $callback) : void{
+				if($success){
+					$extradata = $session->getMenuExtradata();
+					$extradata->setName($name ?? $this->getName());
+					$extradata->setPosition($this->type->calculateGraphicPosition($player));
+					$this->type->sendGraphic($player, $extradata);
+					$session->setCurrentMenu($this, $callback);
+				}elseif($callback !== null){
+					$callback(false);
+				}
+			});
 		}
 	}
 
-	public function onInventoryClose(Player $player) : void{
-		if($this->sessionized){
-			unset($this->sessions[$player->getId()]);
+	abstract public function getInventoryForPlayer(Player $player) : InvMenuInventory;
+
+	public function handleInventoryTransaction(Player $player, Item $in, Item $out, SlotChangeAction $action) : bool{
+		if($this->readonly){
+			if($this->listener !== null){
+				($this->listener)($player, $in, $out, $action);
+			}
+			return false;
 		}
+
+		return $this->listener === null || ($this->listener)($player, $in, $out, $action);
 	}
 
-	public function __clone(){
-		$this->inventory = $this->inventory->createNewInstance($this);
-		$this->clearSessions(false);
+	public function onClose(Player $player) : void{
+		if($this->inventory_close_listener !== null){
+			($this->inventory_close_listener)($player, $this->getInventoryForPlayer($player));
+		}
+
+		/** @var PlayerSession $session */
+		$session = PlayerManager::get($player);
+		$this->type->removeGraphic($player, $session->getMenuExtradata());
+		$session->removeCurrentMenu();
 	}
 }
