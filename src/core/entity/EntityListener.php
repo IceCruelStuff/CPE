@@ -66,40 +66,6 @@ class EntityListener implements Listener {
         if((!$id === Block::BEDROCK) or (!$id === Block::OBSIDIAN)) {
             return;
         }
-        if($event->getAction() === PlayerInteractEvent::LEFT_CLICK_BLOCK and $id === Block::BEDROCK) {
-            $this->core->getScheduler()->scheduleDelayedTask(new class($player, $block) extends Task {
-
-                /** @var CrypticPlayer */
-                private $player;
-
-                /** @var Block */
-                private $block;
-
-                /**
-                 *  constructor.
-                 *
-                 * @param CrypticPlayer $player
-                 * @param Block         $block
-                 */
-                public function __construct(CrypticPlayer $player, Block $block) {
-                    $this->player = $player;
-                    $this->block = $block;
-                }
-
-                /**
-                 * @param int $currentTick
-                 */
-                public function onRun(int $currentTick) {
-                    if($this->player->isClosed()) {
-                        return;
-                    }
-                    if($this->player->isBreaking() === true) {
-                        $item = $this->player->getInventory()->getItemInHand();
-                        $this->player->getLevel()->useBreakOn($this->block, $item, $this->player, true);
-                    }
-                }
-            }, (int)(($block->getBreakTime($player->getInventory()->getItemInHand()) * 20) - 1));
-        }
         $hash = Level::blockHash($block->x, $block->y, $block->z);
         if(!isset($this->blocks[$hash])) {
             if($id === Block::BEDROCK) {
