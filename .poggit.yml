@@ -8,8 +8,8 @@ projects:
     libs:
       - src: muqsit/InvMenu/InvMenu
         version: ^3.1.0
-      - src: dktapps/pmforms/BaseForm
-        version: ^3.4.0   
+      - src: dktapps/pmforms
+        version: 3.4.0   
     lints:
       phpstan: false
 ...
