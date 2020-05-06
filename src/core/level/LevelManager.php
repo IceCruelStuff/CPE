@@ -44,28 +44,6 @@ class LevelManager {
         BlockFactory::registerBlock(new LuckyBlock(), true);
         BlockFactory::registerBlock(new Hopper(), true);
         BlockFactory::registerBlock(new MonsterSpawner(), true);
-        BlockFactory::registerBlock(new class() extends RedstoneOre {
-
-            /**
-             * @param Item $item
-             *
-             * @return array
-             */
-            public function getDropsForCompatibleTool(Item $item): array {
-                return [Item::get(Item::REDSTONE, 0, 1)];
-            }
-        }, true);
-        BlockFactory::registerBlock(new class() extends GlowingRedstoneOre {
-
-            /**
-             * @param Item $item
-             *
-             * @return array
-             */
-            public function getDropsForCompatibleTool(Item $item): array {
-                return [Item::get(Item::REDSTONE, 0, 1)];
-            }
-        }, true);
         BlockFactory::registerBlock(new Generator(Item::BLUE_GLAZED_TERRACOTTA, Item::get(Item::COAL, 0, 1), Generator::AUTO), true);
         BlockFactory::registerBlock(new Generator(Item::BROWN_GLAZED_TERRACOTTA, Item::get(Item::COAL_ORE, 0, 1), Generator::MINING), true);
         BlockFactory::registerBlock(new Generator(Item::GRAY_GLAZED_TERRACOTTA, Item::get(Item::DYE, 4, 1), Generator::AUTO), true);
