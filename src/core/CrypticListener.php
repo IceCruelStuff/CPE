@@ -7,6 +7,7 @@ namespace core;
 use core\discord\DiscordManager;
 use core\faction\Faction;
 use core\rank\Rank;
+use core\sessions\SessionManager;
 use core\task\PlayerKickTask;
 use core\translation\Translation;
 use core\translation\TranslationException;
@@ -108,15 +109,9 @@ class CrypticListener implements Listener
         $player->load($this->core);
     }
 
-    /**
-     * @param PlayerQuitEvent $e
-     */
-    public function onQuit(PlayerQuitEvent $e): void
+    public function onQuit(PlayerQuitEvent $event): void
     {
-        /** @var CrypticPlayer $p */
-        $p = $e->getPlayer();
-        $p->saveData();
-        if (isset(Cryptic::getInstance()->sessions[$p->getName()])) unset(Cryptic::getInstance()->sessions[$p->getName()]);
+        SessionManager::close($event->getPlayer());
     }
 
     /**
@@ -130,6 +125,8 @@ class CrypticListener implements Listener
         if (!$player instanceof CrypticPlayer) {
             return;
         }
+
+        SessionManager::open($player);
         $server = $this->core->getServer();
         $players = count($server->getOnlinePlayers());
         $maxPlayers = $this->core->getServer()->getMaxPlayers();
@@ -156,54 +153,6 @@ class CrypticListener implements Listener
         if ($player->getCurrentTotalXp() < -0x80000000) {
             $player->setCurrentTotalXp(0);
         }
-        $this->core->getScheduler()->scheduleDelayedTask(new class($player) extends Task
-        {
-
-            /** @var CrypticPlayer */
-            private $player;
-
-            /**
-             *  constructor.
-             *
-             * @param CrypticPlayer $player
-             */
-            public function __construct(CrypticPlayer $player)
-            {
-                $this->player = $player;
-            }
-
-            /**
-             * @param int $currentTick
-             */
-            public function onRun(int $currentTick)
-            {
-                if ($this->player->isOnline() === false) {
-                    return;
-                }
-                $item = $this->player->getInventory()->getItemInHand();
-                $this->player->getInventory()->setItemInHand(Item::get(Item::TOTEM));
-                $pk = new LevelEventPacket();
-                $pk->position = $this->player;
-                $pk->evid = LevelEventPacket::EVENT_SOUND_TOTEM;
-                $pk->data = 0;
-                $this->player->sendDataPacket($pk);
-                $pk = new LevelEventPacket;
-                $pk->evid = LevelEventPacket::EVENT_ADD_PARTICLE_MASK | (Particle::TYPE_TOTEM & 0xFFF);
-                $pk->position = $this->player;
-                $pk->data = 0;
-                $this->player->sendDataPacket($pk);
-                $pk = new ActorEventPacket();
-                $pk->entityRuntimeId = $this->player->getId();
-                $pk->event = ActorEventPacket::CONSUME_TOTEM;
-                $pk->data = 0;
-                $this->player->sendDataPacket($pk);
-                $this->player->addTitle("  ", "§l§6Cryptic§ePE§r\n§b" . Cryptic::GAMEMODE . "\n\n\n\n\n\n\n", 5, 20, 5);
-                $this->player->getInventory()->setItemInHand($item);
-//				if(count($this->player->getInbox()->getInventory()->getContents()) >= 1){
-//					$this->player->sendMessage(Translation::getMessage("inboxAlert"));
-//				}
-            }
-        }, 40);
     }
 
     /**
