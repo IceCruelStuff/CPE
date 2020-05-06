@@ -5,6 +5,6 @@ branches:
 projects:
   CPE:
     path: ""
-    lints:
+    lint:
       phpstan: false
 ...
