@@ -43,18 +43,5 @@ class EnvoysCommand extends Command {
             $time = $envoy->getTimeLeft();
             $lines[] = TextFormat::RED . "Envoy ($x, $y, $z): " . TextFormat::WHITE . gmdate("i:s", $time) .  " before despawn.";
         }
-        $sender->sendForm(new class($lines) extends CustomForm {
-
-            /**
-             *  constructor.
-             *
-             * @param string[] $lines
-             */
-            public function __construct(array $lines) {
-                $elements = [];
-                $elements[] = new Label("Message", implode("\n", $lines));
-                parent::__construct(TextFormat::DARK_RED. TextFormat::BOLD . "Envoys", $elements);
-            }
-        });
     }
 }
