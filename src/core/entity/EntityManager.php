@@ -22,16 +22,11 @@ use core\Cryptic;
 use core\entity\task\ExplosionQueueTask;
 use core\CrypticPlayer;
 use libs\utils\Utils;
-use pocketmine\block\Bedrock;
-use pocketmine\block\BlockFactory;
-use pocketmine\block\BlockToolType;
-use pocketmine\block\Obsidian;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Explosive;
 use pocketmine\entity\Human;
 use pocketmine\entity\Living;
 use pocketmine\item\Item;
-use pocketmine\item\TieredTool;
 use pocketmine\level\Position;
 use pocketmine\utils\TextFormat;
 
@@ -77,65 +72,6 @@ class EntityManager {
         Entity::registerEntity(IronGolem::class, true);
         Entity::registerEntity(Pig::class, true);
         Entity::registerEntity(Spider::class, true);
-		BlockFactory::registerBlock(new class() extends Bedrock {
-
-			/**
-			 * @return float
-			 */
-			public function getBlastResistance() : float {
-				return 36.41;
-			}
-
-			/**
-			 * @return int
-			 */
-			public function getToolType() : int{
-				return BlockToolType::TYPE_PICKAXE;
-			}
-
-			/**
-			 * @return int
-			 */
-			public function getToolHarvestLevel() : int{
-				return TieredTool::TIER_DIAMOND;
-			}
-
-			/**
-			 * @return float
-			 */
-			public function getHardness() : float{
-				return 999999;
-			}
-
-			/**
-			 * @param Item $item
-			 *
-			 * @return Item[]
-			 */
-			public function getDropsForCompatibleTool(Item $item): array {
-				return [
-					Item::get(Item::BEDROCK, 0, 1)
-				];
-			}
-
-			/**
-			 * @param Item $item
-			 *
-			 * @return bool
-			 */
-			public function isBreakable(Item $item): bool {
-				return true;
-			}
-		}, true);
-		BlockFactory::registerBlock(new class() extends Obsidian {
-
-			/**
-			 * @return float
-			 */
-			public function getBlastResistance() : float {
-				return 36.41;
-			}
-		}, true);
         $path = Cryptic::getInstance()->getDataFolder() . "skins" . DIRECTORY_SEPARATOR . "merchant.png";
         $this->addNPC(new NPC(Utils::createSkin(Utils::getSkinDataFromPNG($path)), new Position(263.5, 71, 253.5, $this->core->getServer()->getDefaultLevel()), TextFormat::BOLD . TextFormat::YELLOW . "Merchant\n" . TextFormat::GRAY . "(Tap me)", function(CrypticPlayer $player) {
             $player->sendForm(new ShopForm());
