@@ -243,18 +243,5 @@ class FactionManager {
         foreach($factions as $location => $faction) {
             $lines[] = TextFormat::DARK_RED . " + " . TextFormat::DARK_GRAY . "- " . TextFormat::GRAY . "$faction $location";
         }
-        $player->sendForm(new class($lines) extends CustomForm {
-
-            /**
-             *  constructor.
-             *
-             * @param string[] $lines
-             */
-            public function __construct(array $lines) {
-                $elements = [];
-                $elements[] = new Label("Map", implode("\n", $lines));
-                parent::__construct(TextFormat::DARK_RED. TextFormat::BOLD . "Faction Map", $elements);
-            }
-        });
     }
 }
